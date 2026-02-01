@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+python-multipart
+beautifulsoup4
+resend
+pypdf
+beautifulsoup4
+requests
+python-multipart
+langfuse
+langchain-core
+langchain-openai
+langgraph
+fastapi
+uvicorn[standard]
+python-dotenv
+gradio
