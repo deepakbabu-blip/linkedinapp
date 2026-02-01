@@ -33,9 +33,19 @@ def _get_or_create_session_id(request: Request) -> tuple[str, bool]:
 
 def _session_paths(session_id: str) -> tuple[Path, Path]:
     session_root = _session_dir(session_id)
-    export_dir = session_root / "export"
+    export_dir = _load_session_export_dir(session_root)
     db_path = session_root / "linkedin.sqlite"
     return export_dir, db_path
+
+
+def _load_session_export_dir(session_root: Path) -> Path:
+    export_hint = session_root / "export_path.txt"
+    if export_hint.exists():
+        try:
+            return Path(export_hint.read_text().strip())
+        except OSError:
+            return session_root / "export"
+    return session_root / "export"
 
 
 @app.on_event("startup")
@@ -108,7 +118,7 @@ async def upload_export(request: Request, file: UploadFile = File(...)) -> JSONR
     session_id, created = _get_or_create_session_id(request)
     session_root = _session_dir(session_id)
     uploads_dir = session_root / "uploads"
-    extract_dir = session_root / "extract"
+    extract_dir = session_root / "export"
     uploads_dir.mkdir(parents=True, exist_ok=True)
     zip_path = uploads_dir / "linkedin_export.zip"
     content = await file.read()
@@ -126,6 +136,8 @@ async def upload_export(request: Request, file: UploadFile = File(...)) -> JSONR
         zf.extractall(extract_dir)
 
     export_dir = _find_export_root(extract_dir)
+    export_hint = session_root / "export_path.txt"
+    export_hint.write_text(str(export_dir))
     _, db_path = _session_paths(session_id)
     ensure_db(rebuild=True, export_dir=export_dir, db_path=db_path)
 
